@@ -1,0 +1,58 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.edtool79-collab/hirepulse-open-source",
+  "title": "HirePulse tools",
+  "description": "Apify tools for products, Google ads, company signals, jobs, keywords, SEO and YouTube transcripts.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/edtool79-collab/hirepulse-open-source",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.apify.com?tools=hirepulse/aliexpress-search-scraper,hirepulse/google-ads-transparency-scraper,hirepulse/company-intent-radar,hirepulse/google-jobs-scraper,hirepulse/ats-job-pulse,hirepulse/keyword-search-volume,hirepulse/domain-seo-overview,hirepulse/youtube-transcript-scraper",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Apify authentication: Bearer followed by your Apify token.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "hirepulse-tools",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--from",
+          "value": "hirepulse-tools[mcp]==0.1.0"
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "hirepulse-mcp"
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "APIFY_TOKEN",
+          "description": "Apify token provided through the process environment only.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

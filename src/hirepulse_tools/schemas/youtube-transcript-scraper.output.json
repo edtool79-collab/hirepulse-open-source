@@ -1,0 +1,19 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "YouTube Transcript Scraper output",
+    "description": "One record per video in the dataset, plus a small run summary.",
+    "properties": {
+        "results": {
+            "type": "string",
+            "title": "Transcripts",
+            "description": "Dataset items, one per video, with the transcript text and video details.",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        },
+        "runSummary": {
+            "type": "string",
+            "title": "Run summary (JSON)",
+            "description": "How many transcripts were delivered, and how many videos had no captions, were unavailable, failed or were skipped.",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/OUTPUT"
+        }
+    }
+}

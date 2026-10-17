@@ -1,0 +1,19 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "ATS Job Pulse output",
+    "description": "Job and company-summary records in the dataset, plus a markdown report of the run.",
+    "properties": {
+        "results": {
+            "type": "string",
+            "title": "Jobs and company summaries",
+            "description": "Dataset items. Each has record_type \"company_summary\" (one per company) or \"job\" (one per job posting).",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        },
+        "runSummary": {
+            "type": "string",
+            "title": "Run summary (Markdown)",
+            "description": "Human-readable report: companies processed, successes and failures, active, new and closed jobs, breakdown by ATS.",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/OUTPUT_SUMMARY.md"
+        }
+    }
+}

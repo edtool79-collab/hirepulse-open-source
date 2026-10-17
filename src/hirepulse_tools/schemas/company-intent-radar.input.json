@@ -1,0 +1,32 @@
+{
+    "title": "Company Intent Radar input",
+    "description": "List company websites. Each one gets a short report of buying-intent signals: hiring, Google ads, SEO traffic and email provider.",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "domains": {
+            "title": "Company domains",
+            "type": "array",
+            "description": "Array of strings. In the Console UI: one per line. Company websites, for example \"stripe.com\". Full URLs are fine too. Up to 100 per run.",
+            "editor": "stringList",
+            "prefill": ["stripe.com", "notion.so"],
+            "minItems": 1,
+            "maxItems": 100
+        },
+        "country": {
+            "title": "Country for SEO traffic",
+            "type": "string",
+            "description": "Two-letter country code for the organic traffic estimate, for example US, GB or DE. Default: US.",
+            "editor": "textfield",
+            "default": "US",
+            "pattern": "^[A-Za-z]{2}$"
+        },
+        "include_jobs": {
+            "title": "Include newest job titles",
+            "type": "boolean",
+            "description": "Add the 5 newest job titles to each report.",
+            "default": false
+        }
+    },
+    "required": ["domains"]
+}

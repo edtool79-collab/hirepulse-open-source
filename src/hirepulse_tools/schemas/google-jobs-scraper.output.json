@@ -1,0 +1,19 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "Google Jobs Scraper output",
+    "description": "Job records in the dataset, plus a small run summary.",
+    "properties": {
+        "results": {
+            "type": "string",
+            "title": "Jobs",
+            "description": "Dataset items: one record per job.",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        },
+        "runSummary": {
+            "type": "string",
+            "title": "Run summary (JSON)",
+            "description": "Outcome of the run (COMPLETE, NO_DATA, PARTIAL_SPENDING_LIMIT, FREE_PLAN_LIMITED, ...), searches with jobs and jobs returned.",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/OUTPUT"
+        }
+    }
+}

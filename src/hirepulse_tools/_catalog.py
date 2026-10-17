@@ -1,0 +1,2 @@
+"""Actor/function mapping; product descriptions use supplied facts only."""
+TOOL_SLUGS = {'search_aliexpress': 'aliexpress-search-scraper', 'google_ads_by_domain': 'google-ads-transparency-scraper', 'company_intent': 'company-intent-radar', 'google_jobs': 'google-jobs-scraper', 'ats_jobs': 'ats-job-pulse', 'keyword_volume': 'keyword-search-volume', 'domain_seo': 'domain-seo-overview', 'youtube_transcripts': 'youtube-transcript-scraper'}

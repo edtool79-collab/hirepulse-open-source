@@ -1,0 +1,22 @@
+# Install .[mcp] into the launch environment before using this stdio descriptor.
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    additionalProperties: false
+    required:
+      - apifyToken
+    properties:
+      apifyToken:
+        type: string
+        minLength: 1
+        description: Apify token; supplied securely at runtime, never stored in this file.
+        format: password
+        writeOnly: true
+        x-secret: true
+  commandFunction: |-
+    (config) => ({
+      command: 'python',
+      args: ['-m', 'hirepulse_tools.mcp_server'],
+      env: { APIFY_TOKEN: config.apifyToken }
+    })

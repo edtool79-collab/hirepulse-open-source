@@ -1,0 +1,31 @@
+{
+    "title": "YouTube Transcript Scraper input",
+    "description": "Give a list of YouTube videos and get the transcript of each one as clean text, with optional timestamps.",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "videos": {
+            "title": "Videos",
+            "type": "array",
+            "description": "YouTube video URLs or 11-character video IDs. Regular links, youtu.be links, Shorts, embeds and live links all work. Up to 1,000 per run. Each delivered transcript is one charged result; videos without captions are not charged.",
+            "editor": "stringList",
+            "prefill": ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://youtu.be/jNQXAC9IVRw"],
+            "minItems": 1,
+            "maxItems": 1000,
+            "uniqueItems": true
+        },
+        "language": {
+            "title": "Preferred language",
+            "type": "string",
+            "description": "Two-letter language code such as \"en\", \"es\" or \"de\". If the video has captions in this language they are used; otherwise the video's main captions are returned and the \"language\" field tells you which. Leave empty for the video's main captions.",
+            "editor": "textfield"
+        },
+        "include_timestamps": {
+            "title": "Include timestamps",
+            "type": "boolean",
+            "description": "Add a \"segments\" array with the start time, duration and text of every caption line. Off by default to keep the output small.",
+            "default": false
+        }
+    },
+    "required": ["videos"]
+}

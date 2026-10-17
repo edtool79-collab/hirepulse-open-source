@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hirepulse-tools"
+version = "0.1.0"
+description = "Python functions and a customizable MCP server for eight HirePulse Apify tools"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = ["apify-client>=3.3,<4", "jsonschema>=4.20,<5"]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.30,<2"]
+dev = ["mcp>=1.30,<2", "pytest>=8,<10", "build>=1,<2", "PyYAML>=6,<7", "rfc3986-validator>=0.1,<1"]
+
+[project.scripts]
+hirepulse-mcp = "hirepulse_tools.mcp_server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hirepulse_tools = ["schemas/*.json", "py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

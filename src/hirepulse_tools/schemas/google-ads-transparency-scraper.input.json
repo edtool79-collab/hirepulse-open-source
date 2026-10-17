@@ -1,0 +1,78 @@
+{
+    "title": "Google Ads Transparency Scraper input",
+    "description": "List the website domains of the companies you want to check. For each one you get the ads it runs on Google (Search, YouTube, Shopping, Play, Maps), from Google's Ads Transparency Center.",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "domains": {
+            "title": "Domains",
+            "type": "array",
+            "description": "Array of strings. In the Console UI: one per line. Company websites, for example \"nike.com\". Full URLs are fine too. Up to 100 per run.",
+            "editor": "stringList",
+            "prefill": ["nike.com"],
+            "minItems": 1,
+            "maxItems": 100
+        },
+        "mode": {
+            "title": "Output",
+            "type": "string",
+            "description": "\"ads\": one record per ad (preview image, dates, links). \"summary\": one compact record per domain (does it advertise, how many ads, which formats, latest ad), charged per domain only. Summary is ideal for lead lists and AI agents. For a cheap agent check use mode=\"summary\" with one domain. For an ad sample use mode=\"ads\" and max_ads_per_domain=1.",
+            "editor": "select",
+            "enum": ["ads", "summary"],
+            "enumTitles": ["Every ad (one record per ad)", "Domain summary (one record per domain)"],
+            "default": "ads"
+        },
+        "max_ads_per_domain": {
+            "title": "Max ads per domain",
+            "type": "integer",
+            "description": "Most recent ads to return for each domain (ads mode). Up to 120. For a cheap agent check use mode=\"summary\" with one domain. For an ad sample use mode=\"ads\" and max_ads_per_domain=1.",
+            "minimum": 1,
+            "maximum": 120,
+            "default": 40
+        },
+        "country": {
+            "title": "Country",
+            "type": "string",
+            "description": "Only ads shown in this country, as a two-letter code such as US, GB or DE. Leave empty for ads shown anywhere.",
+            "editor": "textfield",
+            "pattern": "^([A-Za-z]{2})?$"
+        },
+        "platform": {
+            "title": "Platform",
+            "type": "string",
+            "description": "Only ads shown on this Google platform.",
+            "editor": "select",
+            "enum": ["all", "google_search", "youtube", "google_shopping", "google_play", "google_maps"],
+            "enumTitles": ["All platforms", "Google Search", "YouTube", "Google Shopping", "Google Play", "Google Maps"],
+            "default": "all"
+        },
+        "format": {
+            "title": "Ad format",
+            "type": "string",
+            "description": "Only ads of this format.",
+            "editor": "select",
+            "enum": ["all", "text", "image", "video"],
+            "enumTitles": ["All formats", "Text", "Image", "Video"],
+            "default": "all"
+        },
+        "date_from": {
+            "title": "Shown from",
+            "type": "string",
+            "description": "Only ads shown on or after this date (YYYY-MM-DD). Set together with \"Shown until\".",
+            "editor": "datepicker"
+        },
+        "date_to": {
+            "title": "Shown until",
+            "type": "string",
+            "description": "Only ads shown on or before this date (YYYY-MM-DD).",
+            "editor": "datepicker"
+        },
+        "only_new_ads": {
+            "title": "Only new ads (monitoring)",
+            "type": "boolean",
+            "description": "Return only ads that earlier runs of yours did not return yet, for the same domain and filters. Schedule the Actor daily or weekly to get alerted about new competitor ads. You still pay the per-domain lookup.",
+            "default": false
+        }
+    },
+    "required": ["domains"]
+}

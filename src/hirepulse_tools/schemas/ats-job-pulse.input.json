@@ -1,0 +1,95 @@
+{
+    "title": "ATS-Job-Pulse input",
+    "description": "Give a list of companies. For each one the Actor finds its job board (Greenhouse, Lever, Ashby, Workable, Recruitee or SmartRecruiters), returns the open jobs plus a hiring summary, and reports what changed since the previous run. Use the filters to keep the output small.",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "companies": {
+            "title": "Companies",
+            "type": "array",
+            "description": "Company website domains (e.g. \"stripe.com\") or job-board slugs (e.g. \"stripe\"). To force a specific ATS, prefix the slug: \"greenhouse:stripe\", \"lever:spotify\", \"ashby:linear\", \"workable:huggingface\", \"recruitee:bunq\", \"smartrecruiters:BoschGroup\". Each successfully processed company is charged once, regardless of how many jobs it has.",
+            "editor": "stringList",
+            "prefill": ["stripe.com", "linear.app", "ramp.com"],
+            "minItems": 1,
+            "uniqueItems": true
+        },
+        "output_mode": {
+            "title": "What to return",
+            "type": "string",
+            "description": "\"jobs_and_summary\": one company_summary record per company followed by its job records. \"summary_only\": only the company_summary records (job counts, new/closed counts, departments, locations, technologies) — the smallest output, best for a quick hiring-signal check. \"jobs_only\": only job records. For a cheap agent check use output_mode=\"summary_only\" and max_jobs_per_company=20. This keeps returned data small; the per-company charge is unchanged.",
+            "editor": "select",
+            "default": "jobs_and_summary",
+            "enum": ["jobs_and_summary", "summary_only", "jobs_only"],
+            "enumTitles": ["Jobs + company summary", "Company summary only (smallest)", "Jobs only"]
+        },
+        "track_diff": {
+            "title": "Track changes between runs",
+            "type": "boolean",
+            "description": "Compare with the previous run that used the same \"state_id\" and set each job's \"status\" to NEW, EXISTING or CLOSED. On the first run every job is NEW (the summary marks this with is_first_run = true). When off, every job has status ACTIVE and nothing is remembered.",
+            "default": true
+        },
+        "state_id": {
+            "title": "State ID",
+            "type": "string",
+            "description": "Name of the saved history used for change tracking. Runs that share a state_id are compared with each other. Use a different value per watchlist or per schedule.",
+            "default": "default_state",
+            "editor": "textfield"
+        },
+        "extract_tech_keywords": {
+            "title": "Extract technology keywords",
+            "type": "boolean",
+            "description": "Scan each job title and description for core technologies (Python, AWS, React, Kubernetes, LLMs, ...) and return them in \"detected_technologies\" and in the summary's \"top_technologies\".",
+            "default": true
+        },
+        "only_changes": {
+            "title": "Only new and closed jobs",
+            "type": "boolean",
+            "description": "Return only jobs whose status is NEW or CLOSED. Use it on scheduled runs to get just what changed since the last run.",
+            "default": false,
+            "sectionCaption": "Filters (optional)",
+            "sectionDescription": "Filters reduce which job records are returned. They never affect change tracking or the company summary, which always cover all jobs."
+        },
+        "title_keywords": {
+            "title": "Job title contains",
+            "type": "array",
+            "description": "Return only jobs whose title contains at least one of these words or phrases (case-insensitive). Example: [\"engineer\", \"data scientist\"].",
+            "editor": "stringList",
+            "uniqueItems": true
+        },
+        "departments": {
+            "title": "Department contains",
+            "type": "array",
+            "description": "Return only jobs whose department contains at least one of these words (case-insensitive). Example: [\"engineering\", \"sales\"].",
+            "editor": "stringList",
+            "uniqueItems": true
+        },
+        "locations": {
+            "title": "Location contains",
+            "type": "array",
+            "description": "Return only jobs whose location contains at least one of these words (case-insensitive). Example: [\"london\", \"new york\", \"germany\"].",
+            "editor": "stringList",
+            "uniqueItems": true
+        },
+        "technologies": {
+            "title": "Mentions technology",
+            "type": "array",
+            "description": "Return only jobs that mention at least one of these technologies, using the names from \"detected_technologies\" (case-insensitive). Example: [\"Python\", \"Kubernetes\", \"LLMs\"].",
+            "editor": "stringList",
+            "uniqueItems": true
+        },
+        "remote_only": {
+            "title": "Remote jobs only",
+            "type": "boolean",
+            "description": "Return only jobs marked or described as remote.",
+            "default": false
+        },
+        "max_jobs_per_company": {
+            "title": "Max jobs per company",
+            "type": "integer",
+            "description": "Maximum number of job records returned per company, after the other filters. 0 means no limit. When the limit cuts the list, NEW jobs are kept first, then CLOSED, then the rest. The summary's \"matching_jobs\" tells how many matched in total. For a cheap agent check use output_mode=\"summary_only\" and max_jobs_per_company=20. This keeps returned data small; the per-company charge is unchanged.",
+            "default": 0,
+            "minimum": 0
+        }
+    },
+    "required": ["companies"]
+}

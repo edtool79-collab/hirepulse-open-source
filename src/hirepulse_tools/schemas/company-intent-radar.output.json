@@ -1,0 +1,19 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "Company Intent Radar output",
+    "description": "One report per company domain, plus a small run summary.",
+    "properties": {
+        "results": {
+            "type": "string",
+            "title": "Company reports",
+            "description": "Dataset items: one report per domain.",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        },
+        "runSummary": {
+            "type": "string",
+            "title": "Run summary (JSON)",
+            "description": "Outcome of the run, reports produced and reports charged.",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/OUTPUT"
+        }
+    }
+}

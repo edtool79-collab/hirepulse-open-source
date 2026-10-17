@@ -1,0 +1,19 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "Google Ads Transparency Scraper output",
+    "description": "Ad records (or one summary per domain) in the dataset, plus a small run summary.",
+    "properties": {
+        "results": {
+            "type": "string",
+            "title": "Ads",
+            "description": "Dataset items: one record per ad, or one per domain in summary mode.",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        },
+        "runSummary": {
+            "type": "string",
+            "title": "Run summary (JSON)",
+            "description": "Outcome of the run (COMPLETE, NO_DATA, PARTIAL_SPENDING_LIMIT, FREE_PLAN_LIMITED, ...), domains checked and ads returned.",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/OUTPUT"
+        }
+    }
+}

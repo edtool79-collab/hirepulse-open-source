@@ -1,0 +1,53 @@
+{
+    "title": "AliExpress Search Scraper input",
+    "description": "Search AliExpress like a shopper and get every product in the results as structured data.",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "queries": {
+            "title": "Searches",
+            "type": "array",
+            "description": "Array of strings. In the Console UI: one per line. What to search for, for example \"yoga mat\". Up to 20 per run.",
+            "editor": "stringList",
+            "prefill": ["yoga mat"],
+            "minItems": 1,
+            "maxItems": 20
+        },
+        "max_results_per_query": {
+            "title": "Max products per search",
+            "type": "integer",
+            "description": "Up to 1,200 (20 pages of 60).",
+            "minimum": 1,
+            "maximum": 1200,
+            "default": 60
+        },
+        "sort": {
+            "title": "Sort by",
+            "type": "string",
+            "editor": "select",
+            "enum": ["best_match", "orders", "price_low", "price_high"],
+            "enumTitles": ["Best match", "Most orders", "Price: low to high", "Price: high to low"],
+            "default": "best_match",
+            "description": "Order of the results."
+        },
+        "currency": {
+            "title": "Currency",
+            "type": "string",
+            "editor": "select",
+            "enum": ["USD", "EUR", "GBP", "CAD", "AUD", "BRL", "MXN", "PLN", "ILS", "JPY", "KRW", "INR", "TRY", "CHF", "SEK"],
+            "default": "USD",
+            "description": "Currency of the prices."
+        },
+        "ship_to": {
+            "title": "Ship to country",
+            "type": "string",
+            "editor": "textfield",
+            "default": "US",
+            "pattern": "^[A-Za-z]{2}$",
+            "description": "Two-letter country code. Prices and availability follow this country."
+        },
+        "min_price": { "title": "Min price", "type": "integer", "minimum": 0, "description": "Only products from this price (optional)." },
+        "max_price": { "title": "Max price", "type": "integer", "minimum": 0, "description": "Only products up to this price (optional)." }
+    },
+    "required": ["queries"]
+}

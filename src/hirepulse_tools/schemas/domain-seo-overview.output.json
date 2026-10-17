@@ -1,0 +1,19 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "Domain SEO Overview output",
+    "description": "Domain overview, ranked keyword and competitor records in the dataset, plus a small run summary.",
+    "properties": {
+        "results": {
+            "type": "string",
+            "title": "Domain SEO records",
+            "description": "Dataset items. record_type is domain_overview (one per domain), ranked_keyword or competitor.",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        },
+        "runSummary": {
+            "type": "string",
+            "title": "Run summary (JSON)",
+            "description": "Outcome of the run (COMPLETE, NO_DATA, PARTIAL_SPENDING_LIMIT, FREE_PLAN_LIMITED, ...), number of domains with data, rows and lookups.",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/OUTPUT"
+        }
+    }
+}

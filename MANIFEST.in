@@ -1,0 +1,9 @@
+include .env.example .gitignore LICENSE README.md
+include server.json glama.json smithery.yaml SKILL.md AGENTS.md publishing.json
+recursive-include scripts *.py
+recursive-include docs *.md
+recursive-include examples *.py
+recursive-include tests *.py
+recursive-include tests/fixtures *.json
+recursive-include src/hirepulse_tools/schemas *.json
+include src/hirepulse_tools/py.typed
