@@ -52,7 +52,7 @@ monitoring `only_new_ads`.
 Do NOT use for... launching or editing ads; this retrieves Transparency Center data.
 
 Call: `google_ads_by_domain(domains=["nike.com"], mode="summary", result_limit=5, max_total_charge_usd=0.10)`.
-Cost: $0.005 per domain + $0.0015 per ad. Free plan: 1 domain, up to 5 ads.
+Cost: $0.005 per domain + $0.0015 per ad; summary mode has no per-ad charge. Domains with no ads cost $0. Actor-start charges are separate.
 
 ## Company Intent Radar
 
@@ -93,7 +93,9 @@ Call: `ats_jobs(companies=["stripe.com"], output_mode="summary_only", result_lim
 Use `summary_only` for short hiring checks. `track_diff` defaults to true and
 shares history through `state_id`; first-run NEW jobs are a baseline, not a
 hiring spike. `max_jobs_per_company=0` means unlimited Actor input; choose an
-explicit limit when requesting job rows. No price is specified here.
+explicit limit when requesting job rows.
+
+Cost: $0.05 per company whose board was found and processed; not-found and failed companies are not charged. Actor-start charges are separate.
 
 ## Google Jobs search
 
@@ -142,7 +144,9 @@ Do NOT use for... reporting these estimates as measured website analytics.
 
 Call: `domain_seo(domains=["notion.so"], top_keywords=0, competitors=0, result_limit=5, max_total_charge_usd=0.10)`.
 Zero keyword/competitor limits request overview only. Check `has_data` on
-overview rows. No price is specified here.
+overview rows.
+
+Cost: $0.02 per lookup + $0.005 per returned record; overview only $0.025, defaults $0.215. Actor-start charges are separate.
 
 ## YouTube transcripts
 
@@ -156,8 +160,10 @@ Use this when... retrieving YouTube transcripts in bulk with optional timestamps
 Do NOT use for... treating error statuses as delivered transcripts or ignoring
 missing transcript data.
 
-Call: `youtube_transcripts(videos=["https://www.youtube.com/watch?v=dQw4w9WgXcQ"], include_timestamps=True, result_limit=5, max_total_charge_usd=0.10)`.
-Check `status` for each video. Free plan: first 3 videos per run. No price is specified here.
+Call: `youtube_transcripts(videos=["https://www.youtube.com/watch?v=jNQXAC9IVRw"], include_timestamps=True, result_limit=5, max_total_charge_usd=0.10)`.
+Check `status` for each video. Free plan: first 3 videos per run.
+
+Cost: $0.003 per delivered transcript; missing captions, unavailable videos and failed fetches are not charged. Actor-start charges are separate.
 
 ## Caps, errors and evidence
 
@@ -165,7 +171,8 @@ Check `status` for each video. Free plan: first 3 videos per run. No price is sp
   Local defaults are `result_limit=60` and `max_total_charge_usd=1.0`.
   These wrapper caps do not configure Apify's hosted server.
 - MCP limits output to 32,000 UTF-8 bytes, omitting whole records. Check
-  `output_truncated`, `omitted_items` and `result_limit_reached`; use Python
+  `output_truncated`, `omitted_items`, `result_limit_reached`, `run_outcome` and
+  `data_completeness`. UNKNOWN is not evidence of no data; use Python
   for full large records. Never claim completeness from a capped response.
 - Library `HirePulseError` exposes `message`, `suggested_agent_action` and
   `to_dict()`. `InvalidInputError` is also a `ValueError`. MCP errors set

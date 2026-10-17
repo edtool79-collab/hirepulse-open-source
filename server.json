@@ -3,7 +3,7 @@
   "name": "io.github.edtool79-collab/hirepulse-open-source",
   "title": "HirePulse tools",
   "description": "Apify tools for products, Google ads, company signals, jobs, keywords, SEO and YouTube transcripts.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": {
     "url": "https://github.com/edtool79-collab/hirepulse-open-source",
     "source": "github"
@@ -13,13 +13,13 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "hirepulse-tools",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "runtimeHint": "uvx",
       "runtimeArguments": [
         {
           "type": "named",
           "name": "--from",
-          "value": "hirepulse-tools[mcp]==0.1.0"
+          "value": "hirepulse-tools[mcp]==0.1.1"
         }
       ],
       "packageArguments": [

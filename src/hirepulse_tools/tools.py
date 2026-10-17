@@ -59,8 +59,8 @@ def google_ads_by_domain(
 ) -> list[dict[str, Any]]:
     """Returns advertiser_name, advertiser_id, advertiser_verified, ad_id, format, first_shown, last_shown, preview_image_url and transparency_url; summary mode returns one row per domain.
     Use this when... researching a company's Google ads by domains, or monitoring only_new_ads.
-    Do NOT use for... launching or editing ads; this tool retrieves Transparency Center records.
-    Cost: $0.005 per domain + $0.0015 per ad. Free plan: 1 domain, up to 5 ads.
+    Do NOT use for... ad copy text, spend, impressions, launching or editing ads; this tool returns preview images and Transparency Center metadata.
+    Cost: $0.005 per domain + $0.0015 per ad; summary mode has no per-ad charge. Domains with no ads cost $0. An Actor-start event is charged separately.
 
     Optional inputs without schema defaults use None (omitted).
     result_limit requests a run result cap and bounds fetched rows; max_total_charge_usd
@@ -172,6 +172,7 @@ def ats_jobs(
     """Returns record_type, company_domain, title, location, salary, apply_url, detected_technologies and status on jobs; company_summary rows include total_active_jobs, new_jobs, closed_jobs and is_first_run.
     Use this when... finding a company's job board from a domain such as stripe.com or a board slug in companies. Supports Greenhouse, Lever, Ashby, Workable, Recruitee and SmartRecruiters.
     Do NOT use for... Workday or assuming every careers site is supported. Salary requires employer-published data; technologies come from job titles and descriptions.
+    Cost: $0.05 per company whose board was found and processed; not-found and failed companies are not charged. Actor-start charges are separate.
     Choose output_mode='summary_only' for short hiring checks. track_diff shares state_id; first-run NEW jobs are a baseline, not a hiring spike.
 
     Optional inputs without schema defaults use None (omitted).
@@ -251,6 +252,7 @@ def domain_seo(
     """Returns record_type, domain, organic_traffic_estimate, organic_keywords and organic_traffic_value_usd on overview rows; ranked_keyword and competitor rows include keyword and competitor_domain respectively.
     Use this when... comparing estimated organic traffic, ranking keywords, traffic value and competitor domains for domains.
     Do NOT use for... presenting estimated organic traffic as measured website analytics.
+    Cost: $0.02 per lookup + $0.005 per returned record; overview only $0.025, defaults with 20 keywords and 10 competitors $0.215. Actor-start charges are separate.
     Set top_keywords=0 and competitors=0 for overview only; check has_data on overview rows.
 
     Optional inputs without schema defaults use None (omitted).
@@ -282,6 +284,7 @@ def youtube_transcripts(
     """Returns video_id, url, status, transcript and language; include_timestamps=True adds segments with start, duration and text.
     Use this when... retrieving YouTube transcripts in bulk from videos, with timestamps when needed.
     Do NOT use for... treating an error status as a delivered transcript or ignoring missing transcript data.
+    Cost: $0.003 per delivered transcript; unavailable videos, missing captions and failed fetches are not charged. Actor-start charges are separate.
     Check status on each record. Free Apify plan: first 3 videos of each run. Long transcripts may exceed the MCP output budget.
 
     Optional inputs without schema defaults use None (omitted).

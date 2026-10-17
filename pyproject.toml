@@ -4,13 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hirepulse-tools"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python functions and a customizable MCP server for eight HirePulse Apify tools"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = ["apify-client>=3.3,<4", "jsonschema>=4.20,<5"]
+
+[project.urls]
+Homepage = "https://edtool79-collab.github.io/hirepulse-tools/"
+Repository = "https://github.com/edtool79-collab/hirepulse-open-source"
+"Apify Store" = "https://apify.com/hirepulse"
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.30,<2"]

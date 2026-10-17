@@ -32,6 +32,8 @@ def test_exactly_eight_tools_with_schema_defaults_and_descriptions(mock_apify):
         assert tool.description.startswith("Returns ")
         assert "Use this when..." in tool.description
         assert "Do NOT use for..." in tool.description
+        assert "Cost:" in tool.description
+        assert "Actor-start event:" in tool.description
         assert "32,000" in tool.description
         assert tool.annotations.readOnlyHint is False
     mock_apify[0].assert_not_called()
@@ -40,8 +42,9 @@ def test_exactly_eight_tools_with_schema_defaults_and_descriptions(mock_apify):
 @pytest.mark.parametrize("name,slug", TOOL_SLUGS.items())
 def test_each_mcp_tool_calls_mocked_actor_with_caps(name, slug, mock_apify):
     result = asyncio.run(mcp.call_tool(name, required_input(slug) | {"result_limit": 2, "max_total_charge_usd": 0.1}))
-    envelope = json.loads(result[0].text)
+    envelope = json.loads(result.content[0].text)
     assert envelope["items"] == [{"fixture": "mock row"}]
+    assert result.structuredContent == envelope
     assert envelope["omitted_items"] == 0
     mock_apify[1].actor.assert_called_once_with(f"hirepulse/{slug}")
     assert mock_apify[2].call.call_args.kwargs["max_items"] == 2
@@ -75,10 +78,8 @@ def test_empty_mcp_output():
     assert not result["result_limit_reached"]
 
 
-def test_mcp_rejects_missing_token_even_with_placeholder_dotenv(monkeypatch, tmp_path, mock_apify):
+def test_mcp_rejects_missing_token_without_creating_token_files(monkeypatch, mock_apify):
     monkeypatch.delenv("APIFY_TOKEN")
-    (tmp_path / ".env").write_text("APIFY_TOKEN=your_token_here", encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
     result = asyncio.run(mcp.call_tool("company_intent", {"domains": ["stripe.com"]}))
     assert result.isError
     error = json.loads(result.content[0].text)["error"]

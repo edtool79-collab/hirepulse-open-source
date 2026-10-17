@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 from decimal import Decimal
 from functools import lru_cache
 from importlib.resources import files
@@ -13,8 +14,44 @@ from typing import Any
 from apify_client import ApifyClient
 from jsonschema import Draft7Validator
 
+from ._run_context import KNOWN_OUTCOMES, active_context
+
 DEFAULT_RESULT_LIMIT = 60
 DEFAULT_MAX_TOTAL_CHARGE_USD = 1.0
+
+
+def _capture_run_summary(client: Any, run: Any, dataset_id: str, page: Any) -> None:
+    """Read only the existing run's outcome when MCP explicitly requests it.
+
+    Summary failures never hide successfully fetched rows or trigger another run.
+    Raw summaries, upstream errors, tokens and unknown outcome strings are not exposed.
+    """
+    context = active_context.get()
+    if context is None:
+        return
+    run_id = getattr(run, "id", None)
+    context.run_id = run_id if isinstance(run_id, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,80}", run_id) else None
+    context.dataset_id = dataset_id
+    total = getattr(page, "total", None)
+    context.dataset_total = total if type(total) is int and total >= 0 else None
+    store_id = getattr(run, "default_key_value_store_id", None)
+    if not isinstance(store_id, str) or not store_id:
+        context.summary_status = "missing_store"
+        return
+    try:
+        record = client.key_value_store(store_id).get_record("OUTPUT")
+        if record is None:
+            context.summary_status = "not_found"
+            return
+        value = record.get("value") if isinstance(record, dict) else getattr(record, "value", None)
+        outcome = value.get("outcome") if isinstance(value, dict) else None
+        if not isinstance(outcome, str) or outcome not in KNOWN_OUTCOMES:
+            context.summary_status = "unrecognized"
+            return
+        context.outcome = outcome
+        context.summary_status = "available"
+    except Exception:
+        context.summary_status = "unavailable"
 
 
 class HirePulseError(RuntimeError):
@@ -138,9 +175,10 @@ def run_actor(
         items = page.items[:result_limit]
         if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
             raise TypeError("Unexpected dataset item shape")
-        return items
     except Exception:
         raise ActorRunError(
             f"Could not read the dataset for hirepulse/{slug}",
             "Check access to the existing run dataset and retry retrieval there; do not rerun the Actor automatically.",
         ) from None
+    _capture_run_summary(client, run, dataset_id, page)
+    return items

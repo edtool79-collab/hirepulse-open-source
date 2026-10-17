@@ -7,6 +7,7 @@ import json
 import anyio
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from jsonschema import Draft202012Validator
 
 from hirepulse_tools._catalog import TOOL_SLUGS
 
@@ -36,6 +37,8 @@ def test_stdio_initialize_and_list_eight_tools():
                     registered = await session.list_tools()
                     assert len(registered.tools) == 8
                     assert {tool.name for tool in registered.tools} == set(TOOL_SLUGS)
+                    for tool in registered.tools:
+                        assert tool.outputSchema and tool.outputSchema["type"] == "object"
                     # Exercise actual protocol error serialization; no Actor can run.
                     for name, arguments in [
                         ("company_intent", {"domains": ["stripe.com"]}),
@@ -48,6 +51,9 @@ def test_stdio_initialize_and_list_eight_tools():
                         assert envelope["error"]["message"]
                         assert envelope["error"]["suggested_agent_action"]
                         assert result.structuredContent == envelope
+                        if name in TOOL_SLUGS:
+                            tool = next(t for t in registered.tools if t.name == name)
+                            Draft202012Validator(tool.outputSchema).validate(envelope)
                         assert "private-invalid-value" not in result.model_dump_json()
 
     anyio.run(check)
