@@ -27,14 +27,11 @@ def test_directory_json_against_official_schema(filename, schema_name):
     Draft7Validator(schema, format_checker=checker).validate(instance)
 
 
-def test_registry_transports_cover_exactly_eight_actors_and_mcp_extra():
+def test_package_registry_entry_and_readme_cover_the_expected_transports():
     server = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
-    remote = server["remotes"][0]
+    assert "remotes" not in server  # Hosted endpoint has its own Registry entry.
     url = "https://mcp.apify.com?tools=" + ",".join(f"hirepulse/{slug}" for slug in TOOL_SLUGS.values())
-    assert remote["url"] == url
     assert url in (ROOT / "README.md").read_text(encoding="utf-8")
-    assert remote["type"] == "streamable-http"
-    assert remote["headers"][0]["isSecret"] and remote["headers"][0]["isRequired"]
     package = server["packages"][0]
     assert package["transport"]["type"] == "stdio"
     assert package["runtimeHint"] == "uvx"
@@ -42,6 +39,7 @@ def test_registry_transports_cover_exactly_eight_actors_and_mcp_extra():
     assert package["packageArguments"] == [{"type": "positional", "value": "hirepulse-mcp"}]
     assert package["environmentVariables"][0]["name"] == "APIFY_TOKEN"
     assert package["environmentVariables"][0]["isSecret"]
+    assert package["environmentVariables"][0]["isRequired"]
 
 
 def test_one_editable_identity_source_and_generated_files_are_current(tmp_path):
@@ -60,6 +58,22 @@ def test_one_editable_identity_source_and_generated_files_are_current(tmp_path):
     assert server["repository"]["url"] == "https://github.com/example-owner/example-repo"
     assert json.loads(rendered["glama.json"])["maintainers"] == ["example-owner"]
     assert "mcp-name: io.github.example-owner/example-repo" in rendered["README.md"]
+    # Omitting the setting preserves hosted metadata for existing configurations.
+    remote = server["remotes"][0]
+    assert remote["type"] == "streamable-http"
+    assert remote["headers"][0]["isSecret"] and remote["headers"][0]["isRequired"]
+    identity_path = tmp_path / "publishing.json"
+    identity = json.loads(identity_path.read_text(encoding="utf-8"))
+    identity["include_hosted_remote"] = False
+    identity_path.write_text(json.dumps(identity), encoding="utf-8")
+    package_only = json.loads(render(tmp_path)["server.json"])
+    assert "remotes" not in package_only
+    assert package_only["packages"] == server["packages"]
+    identity["include_hosted_remote"] = "false"
+    identity_path.write_text(json.dumps(identity), encoding="utf-8")
+    with pytest.raises(ValueError, match="must be a boolean"):
+        render(tmp_path)
+
 
 
 def test_smithery_requires_only_secret_token_and_maps_environment():

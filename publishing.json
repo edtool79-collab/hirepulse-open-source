@@ -1,4 +1,5 @@
 {
   "github_owner": "edtool79-collab",
-  "github_repo": "hirepulse-open-source"
+  "github_repo": "hirepulse-open-source",
+  "include_hosted_remote": false
 }

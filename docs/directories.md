@@ -7,12 +7,15 @@ README's hidden MCP ownership marker; it has no network or publishing behavior.
 Directory schemas require literal strings, so generated copies appear in those
 files. `python scripts/render_metadata.py --check` catches stale copies.
 
-`server.json` describes the existing Apify hosted endpoint for all eight Actors
-and a future PyPI stdio release. Its uvx command explicitly installs the `mcp`
-extra before running `hirepulse-mcp`, equivalent to
-`python -m hirepulse_tools.mcp_server`. The package has not been published.
-The remote header describes bearer authentication without embedding a token;
-live hosted authentication was not tested.
+`server.json` registers the published PyPI stdio package `hirepulse-tools`.
+Its uvx command explicitly installs the `mcp` extra before running
+`hirepulse-mcp`, equivalent to `python -m hirepulse_tools.mcp_server`.
+The existing Apify hosted endpoint for all eight Actors is already registered
+separately as `io.github.edtool79-collab/hirepulse-tools`. It remains documented
+in the README, and is omitted from this entry to avoid claiming the same remote
+URL twice. `publishing.json` sets `include_hosted_remote` to `false`; omitting
+the setting preserves hosted metadata for older configurations. Neither
+transport embeds an authentication token. Tests do not run paid Actors.
 
 Formats checked on 2026-10-15:
 

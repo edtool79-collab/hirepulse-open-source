@@ -15,6 +15,9 @@ def render(root: Path = ROOT) -> dict[str, str]:
     """Use one editable identity source; directory formats need literal copies."""
     identity = json.loads((root / "publishing.json").read_text(encoding="utf-8"))
     owner, repo = identity["github_owner"], identity["github_repo"]
+    include_remote = identity.get("include_hosted_remote", True)
+    if not isinstance(include_remote, bool):
+        raise ValueError("include_hosted_remote must be a boolean")
     if not re.fullmatch(r"[A-Za-z0-9-]+", owner) or not re.fullmatch(r"[A-Za-z0-9._-]+", repo):
         raise ValueError("Use a GitHub username and repository name, not URLs")
     # Read only literal release fields without requiring tomllib (Python 3.10).
@@ -49,6 +52,10 @@ def render(root: Path = ROOT) -> dict[str, str]:
             "environmentVariables": [{"name": "APIFY_TOKEN", "description": "Apify token provided through the process environment only.", "isRequired": True, "isSecret": True}],
         }],
     }
+    # One hosted endpoint can belong to only one Registry entry.
+    # The package entry can omit a hosted server already registered separately.
+    if not include_remote:
+        server.pop("remotes")
     glama = {"$schema": "https://glama.ai/mcp/schemas/server.json", "maintainers": [owner]}
     readme = (root / "README.md").read_text(encoding="utf-8")
     readme = re.sub(r"\n<!-- mcp-name: .*? -->\n", "", readme)

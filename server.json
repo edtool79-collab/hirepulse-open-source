@@ -8,20 +8,6 @@
     "url": "https://github.com/edtool79-collab/hirepulse-open-source",
     "source": "github"
   },
-  "remotes": [
-    {
-      "type": "streamable-http",
-      "url": "https://mcp.apify.com?tools=hirepulse/aliexpress-search-scraper,hirepulse/google-ads-transparency-scraper,hirepulse/company-intent-radar,hirepulse/google-jobs-scraper,hirepulse/ats-job-pulse,hirepulse/keyword-search-volume,hirepulse/domain-seo-overview,hirepulse/youtube-transcript-scraper",
-      "headers": [
-        {
-          "name": "Authorization",
-          "description": "Apify authentication: Bearer followed by your Apify token.",
-          "isRequired": true,
-          "isSecret": true
-        }
-      ]
-    }
-  ],
   "packages": [
     {
       "registryType": "pypi",
