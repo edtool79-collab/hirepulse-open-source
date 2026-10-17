@@ -1,0 +1,40 @@
+{
+  "format": "setup-recipe-not-a-native-make-blueprint",
+  "active": false,
+  "schedule_to_configure_in_make": {
+    "frequency": "weekly",
+    "day": "Monday",
+    "hour": 8,
+    "timezone": "Asia/Jerusalem"
+  },
+  "connection": "YOUR_APIFY_CONNECTION",
+  "module": "Apify / Make an API Call",
+  "method": "POST",
+  "api_url": "https://api.apify.com/v2/actors/hirepulse~google-ads-transparency-scraper/run-sync-get-dataset-items",
+  "query": {
+    "maxTotalChargeUsd": 1,
+    "restartOnError": false
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "authentication": "Use a private Make Apify connection; no token is included in this recipe.",
+  "body": {
+    "domains": [
+      "YOUR_COMPETITOR_DOMAIN"
+    ],
+    "country": "US",
+    "mode": "ads",
+    "max_ads_per_domain": 20,
+    "only_new_ads": true
+  },
+  "max_input_items": 3,
+  "batching": "Aggregate the entire bounded input list into exactly one bundle before the paid API call. Stop if input is empty, too long, duplicated or contains YOUR_ placeholders.",
+  "output_handling": "Keep rows with ad_id; aggregate one digest containing domain, advertiser_name, format, first_shown and transparency_url. No ad text.",
+  "error_handling": "Stop on errors or HTTP timeout. Do not retry the paid call or create a polling loop that starts new runs; inspect the existing run in Apify Console first.",
+  "validation": "Input types/fields match the local Actor schema. Native Make import and live operation have not been tested.",
+  "sources": [
+    "https://docs.apify.com/integrations/make",
+    "https://docs.apify.com/api/v2/actor-run-sync-get-dataset-items-post"
+  ]
+}

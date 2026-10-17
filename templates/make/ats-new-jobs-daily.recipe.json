@@ -1,0 +1,41 @@
+{
+  "format": "setup-recipe-not-a-native-make-blueprint",
+  "active": false,
+  "schedule_to_configure_in_make": {
+    "frequency": "daily",
+    "hour": 8,
+    "timezone": "Asia/Jerusalem"
+  },
+  "connection": "YOUR_APIFY_CONNECTION",
+  "module": "Apify / Make an API Call",
+  "method": "POST",
+  "api_url": "https://api.apify.com/v2/actors/hirepulse~ats-job-pulse/run-sync-get-dataset-items",
+  "query": {
+    "maxTotalChargeUsd": 1,
+    "restartOnError": false
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "authentication": "Use a private Make Apify connection; no token is included in this recipe.",
+  "body": {
+    "companies": [
+      "YOUR_COMPANY_DOMAIN"
+    ],
+    "output_mode": "jobs_only",
+    "track_diff": true,
+    "state_id": "YOUR_STABLE_WATCHLIST_ID",
+    "only_changes": true,
+    "max_jobs_per_company": 20,
+    "extract_tech_keywords": false
+  },
+  "max_input_items": 3,
+  "batching": "Aggregate the entire bounded input list into exactly one bundle before the paid API call. Stop if input is empty, too long, duplicated or contains YOUR_ placeholders.",
+  "output_handling": "Keep job rows with status NEW for alerts. First run is a baseline. CLOSED rows may be stored separately. Keep the same state_id.",
+  "error_handling": "Stop on errors or HTTP timeout. Do not retry the paid call or create a polling loop that starts new runs; inspect the existing run in Apify Console first.",
+  "validation": "Input types/fields match the local Actor schema. Native Make import and live operation have not been tested.",
+  "sources": [
+    "https://docs.apify.com/integrations/make",
+    "https://docs.apify.com/api/v2/actor-run-sync-get-dataset-items-post"
+  ]
+}

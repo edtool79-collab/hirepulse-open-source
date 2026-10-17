@@ -1,0 +1,346 @@
+{
+  "name": "Monitor competitors' new Google ads weekly and alert Slack with Apify",
+  "active": false,
+  "nodes": [
+    {
+      "id": "cd03d17f-19e2-4943-815e-f162d90aa275",
+      "name": "Every Monday morning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        420
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e1c7a7d6-eed5-4570-b4b4-e3a845742dac",
+      "name": "Configure this batch",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        290,
+        420
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3ab04845-bb70-4903-b608-982790cc068f",
+              "name": "country",
+              "type": "string",
+              "value": "US"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "024ba6a8-084f-4542-b03e-6bbaa2a583a6",
+      "name": "Read competitor domains",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        580,
+        420
+      ],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Competitors"
+        },
+        "options": {}
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "3c9868a4-de35-4645-bf26-b69a6c40c99b",
+      "name": "Build one competitor batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        870,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const c = $('Configure this batch').first().json;\nconst values = [...new Set($input.all().map(i => String(i.json[\"Domain\"] ?? '').trim()).filter(Boolean))];\nif (!values.length) return [];\nif (values.length > 3) throw new Error('Batch exceeds 3 inputs; reduce the sheet before running.');\nif (values.some(v => v.includes('YOUR_'))) throw new Error('Replace input placeholders.');\n\nreturn [{json:{...c, domains:values}}];"
+      }
+    },
+    {
+      "id": "a17c4704-325e-427a-8506-964f384cd8ec",
+      "name": "Run one Apify batch",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "position": [
+        1160,
+        420
+      ],
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorId": "hirepulse~google-ads-transparency-scraper",
+        "customBody": "={{ JSON.stringify({domains:$json.domains,country:$json.country,mode:'ads',max_ads_per_domain:20,only_new_ads:true}) }}",
+        "memory": 256,
+        "maxTotalChargeUsd": 1
+      },
+      "typeVersion": 1,
+      "retryOnFail": false
+    },
+    {
+      "id": "a3dfb913-5674-4fab-bb43-744d7a3a7979",
+      "name": "Compose new ads digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1450,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$input.all().map(i=>i.json).filter(d=>d.ad_id);\nif (!rows.length) return [];\nconst clean=v=>String(v??'').replace(/[<>&]/g,' ').replace(/[\\r\\n]+/g,' ');\nconst lines=rows.map(d=>[d.domain,d.advertiser_name,d.format,d.first_shown,d.transparency_url].map(clean).join(' | '));\nreturn [{json:{text:'Newly observed Google ads (bounded sample):\\n'+lines.join('\\n')}}];"
+      }
+    },
+    {
+      "id": "c53f5ced-a116-4389-a2ad-061d4e1a9b2d",
+      "name": "Send the digest to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1740,
+        420
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_SLACK_CHANNEL"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "57e5dc08-f2af-4f9a-b66c-4d8a7bace35e",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -80
+      ],
+      "parameters": {
+        "content": "## Monitor competitors' new Google ads weekly and alert Slack with Apify\n\nRead competitor domains from a Google Sheet once a week and request only ads not returned by earlier matching runs. Send a single Slack digest of the returned ads.\n\n### Setup\n1. Install the official @apify/n8n-nodes-apify package in your n8n environment and select your Apify credential in the Actor node.\n2. Select your Google Sheets and Slack credentials in their nodes; credentials are intentionally unassigned.\n3. Create Competitors with header Domain and up to 3 unique domains. Select YOUR_SHEET_ID and YOUR_SLACK_CHANNEL.\n4. Edit Configure this batch, replace resource placeholders, and confirm the workflow timezone and Monday 08:00 schedule before activation.\n\n### Cost\n$0.005 per domain + $0.0015 per ad. Apify run cap: $1.\n\n### Batch safety\nOne Actor run per batch, with maxTotalChargeUsd = 1, no retries and no polling. Empty input produces no paid run. A capped run may be partial; inspect its Apify results before repeating any work. Do not enable automatic retry or resume from a node that starts another Actor run.\nAt most 3 domains and 20 ads per domain. The first run establishes what has been seen; returned ads need not have launched this week. Keep the same account and filters for monitoring. No returned ad records means no Slack message. A run cap or result limit can leave ads unreported.",
+        "width": 570,
+        "height": 1050
+      }
+    },
+    {
+      "id": "62d4b3c7-bd0d-4388-921e-8b62f079a166",
+      "name": "Step note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        100
+      ],
+      "parameters": {
+        "content": "### 1. Every Monday morning\nStarts once a week. Confirm the timezone before activation. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "fcc22e10-b0b2-4c4b-aa50-2b42bacacd2d",
+      "name": "Step note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        230,
+        100
+      ],
+      "parameters": {
+        "content": "### 2. Configure this batch\nEdit the batch settings here. Empty lists stop before Apify. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "7ff15d6e-9fbf-46ae-9149-1d86759aee39",
+      "name": "Step note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        520,
+        100
+      ],
+      "parameters": {
+        "content": "### 3. Read competitor domains\nReads input rows from Competitors. Select YOUR_SHEET_ID and match the documented headers. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "00949cf1-d126-48f4-99ab-e33ed4bf56b8",
+      "name": "Step note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        100
+      ],
+      "parameters": {
+        "content": "### 4. Build one competitor batch\nCombines up to 3 unique Domain cells into one monitoring request. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "c44a309a-fedb-47c8-a2e6-5ce1d6268f09",
+      "name": "Step note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        100
+      ],
+      "parameters": {
+        "content": "### 5. Run one Apify batch\nStarts one bounded batch and returns dataset items. Cost cap: $1. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "e5cf3bca-69e4-4023-8cb3-a6c3f47067f5",
+      "name": "Step note 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1390,
+        100
+      ],
+      "parameters": {
+        "content": "### 6. Compose new ads digest\nLists the domain, advertiser, format, first-shown date and Transparency Center URL. Empty results stop here. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "de6bb15d-1273-45a9-a69f-1d6561098e30",
+      "name": "Step note 7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        100
+      ],
+      "parameters": {
+        "content": "### 7. Send the digest to Slack\nPosts one digest. Select your credential and replace YOUR_SLACK_CHANNEL. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    }
+  ],
+  "connections": {
+    "Every Monday morning": {
+      "main": [
+        [
+          {
+            "node": "Configure this batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure this batch": {
+      "main": [
+        [
+          {
+            "node": "Read competitor domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read competitor domains": {
+      "main": [
+        [
+          {
+            "node": "Build one competitor batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build one competitor batch": {
+      "main": [
+        [
+          {
+            "node": "Run one Apify batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run one Apify batch": {
+      "main": [
+        [
+          {
+            "node": "Compose new ads digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose new ads digest": {
+      "main": [
+        [
+          {
+            "node": "Send the digest to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

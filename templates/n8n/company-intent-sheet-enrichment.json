@@ -1,0 +1,354 @@
+{
+  "name": "Enrich company leads weekly with intent signals in Google Sheets using Apify",
+  "active": false,
+  "nodes": [
+    {
+      "id": "33ac19b6-cea3-4467-8bcd-090f065c6b97",
+      "name": "Every Monday morning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        420
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "9cbc5eec-421b-4487-8457-e38f87e8bc3b",
+      "name": "Configure this batch",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        290,
+        420
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7fdc2dc4-ef67-4dbb-82aa-19624bb3640e",
+              "name": "country",
+              "type": "string",
+              "value": "US"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "7de2db55-3cff-4a02-b7d6-78f126834933",
+      "name": "Read lead rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        580,
+        420
+      ],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "options": {}
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "be4a605e-5243-4028-83a9-1e1b493f413f",
+      "name": "Build one enrichment batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        870,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const c = $('Configure this batch').first().json;\nconst normalize = value => String(value ?? '').trim().toLowerCase().replace(/^https?:\\/\\//, '').split('/')[0].replace(/^www\\./, '');\nconst rows=$input.all().map(i=>i.json).filter(r=>String(r.Domain??'').trim());\nif(!rows.length)return [];\nif(rows.length>5)throw new Error('Use at most 5 leads per batch.');\nconst values=rows.map(r=>normalize(r.Domain));\nif(new Set(values).size!==values.length)throw new Error('Domain cells must be unique after normalization.');\nif(values.some(v=>!v || v.includes('your_')))throw new Error('Replace domain placeholders.');\nreturn [{json:{...c,domains:values}}];"
+      }
+    },
+    {
+      "id": "11468553-c0d4-49fc-af47-566d51feff95",
+      "name": "Run one Apify batch",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "position": [
+        1160,
+        420
+      ],
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorId": "hirepulse~company-intent-radar",
+        "customBody": "={{ JSON.stringify({domains:$json.domains,country:$json.country,include_jobs:false}) }}",
+        "memory": 256,
+        "maxTotalChargeUsd": 1
+      },
+      "typeVersion": 1,
+      "retryOnFail": false
+    },
+    {
+      "id": "4aa52ccd-e283-4ec7-b03a-f2c7356e914f",
+      "name": "Match reports to source rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1450,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const day = $now.toFormat('yyyy-MM-dd');\nconst normalize = value => String(value ?? '').trim().toLowerCase().replace(/^https?:\\/\\//, '').split('/')[0].replace(/^www\\./, '');\nconst sources=$('Read lead rows').all().map(i=>i.json);\nreturn $input.all().filter(i=>i.json.domain).map(({json:d})=>{\nconst source=sources.find(r=>normalize(r.Domain)===normalize(d.domain));\nif(!source)throw new Error('Report domain did not match an input row.');\nreturn {json:{Domain:source.Domain,'Intent score':d.intent_score??'','Open jobs':d.open_jobs??'','Ads running now':d.ads_running_now??'',Summary:d.summary??'','Checked on':day}};\n});"
+      }
+    },
+    {
+      "id": "1baa9caf-fefe-4014-b72e-b9528ca8398d",
+      "name": "Update matching lead rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1740,
+        420
+      ],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "options": {},
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Domain"
+          ]
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "6c589801-c55a-445b-8b6b-7927b28bbf5f",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -80
+      ],
+      "parameters": {
+        "content": "## Enrich company leads weekly with intent signals in Google Sheets using Apify\n\nOnce a week, read a small company-domain list and retrieve intent reports in one batch. Write intent scores, open job counts, ad signals and one-line summaries back to the matching source rows.\n\n### Setup\n1. Install the official @apify/n8n-nodes-apify package in your n8n environment and select your Apify credential in the Actor node.\n2. Select your Google Sheets credentials in their nodes; credentials are intentionally unassigned.\n3. Create Leads with headers Domain, Intent score, Open jobs, Ads running now, Summary, Checked on. Keep Domain unique, including after normalizing www, URL paths and case; at most 5 domains.\n4. Edit Configure this batch, replace resource placeholders, and confirm the Asia/Jerusalem timezone and Monday 08:00 schedule before activation.\n\n### Cost\n$0.03 per company report, charged only when the full report was produced. Apify run cap: $1.\n\n### Batch safety\nOne Actor run per batch, with maxTotalChargeUsd = 1, no retries and no polling. Empty input produces no paid run. A capped run may be partial; inspect its Apify results before repeating any work. Do not enable automatic retry or resume from a node that starts another Actor run.\nUpdates match the original Domain cell exactly; keep the source rows unchanged while running. Missing signals are written as blank, never as zero or false. Free-plan results may omit ad and SEO signals.",
+        "width": 570,
+        "height": 1050
+      }
+    },
+    {
+      "id": "3859464f-9ef2-416a-9439-f461b128f2f5",
+      "name": "Step note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        100
+      ],
+      "parameters": {
+        "content": "### 1. Every Monday morning\nStarts once a week on Monday at 08:00 in Asia/Jerusalem. Review before activation. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "21b5202d-7fe8-423a-902d-bd623a55feae",
+      "name": "Step note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        230,
+        100
+      ],
+      "parameters": {
+        "content": "### 2. Configure this batch\nEdit the batch settings here. Empty lists stop before Apify. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "970268b1-4bc2-4dd7-9c5e-39500977f991",
+      "name": "Step note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        520,
+        100
+      ],
+      "parameters": {
+        "content": "### 3. Read lead rows\nReads input rows from Leads. Select YOUR_SHEET_ID and match the documented headers. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "3058d12a-18ca-4d98-b146-4f7ba717e6b1",
+      "name": "Step note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        100
+      ],
+      "parameters": {
+        "content": "### 4. Build one enrichment batch\nNormalizes at most 5 domains and rejects duplicate domain keys before starting a run. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "41b57ac0-076d-4ed3-b89c-fa9257965599",
+      "name": "Step note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        100
+      ],
+      "parameters": {
+        "content": "### 5. Run one Apify batch\nStarts one bounded batch and returns dataset items. Cost cap: $1. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "a6d68af2-ed4c-4d6c-be94-239300107e84",
+      "name": "Step note 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1390,
+        100
+      ],
+      "parameters": {
+        "content": "### 6. Match reports to source rows\nFinds each original Domain cell and prepares an update to that same row. Missing signals stay blank. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "14507fad-4b6d-4867-b09e-3c4ad8a7f270",
+      "name": "Step note 7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        100
+      ],
+      "parameters": {
+        "content": "### 7. Update matching lead rows\nUpdates matching rows in Leads. Select YOUR_SHEET_ID and match the documented headers. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    }
+  ],
+  "connections": {
+    "Configure this batch": {
+      "main": [
+        [
+          {
+            "node": "Read lead rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read lead rows": {
+      "main": [
+        [
+          {
+            "node": "Build one enrichment batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build one enrichment batch": {
+      "main": [
+        [
+          {
+            "node": "Run one Apify batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run one Apify batch": {
+      "main": [
+        [
+          {
+            "node": "Match reports to source rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match reports to source rows": {
+      "main": [
+        [
+          {
+            "node": "Update matching lead rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Monday morning": {
+      "main": [
+        [
+          {
+            "node": "Configure this batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Jerusalem"
+  }
+}

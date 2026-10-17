@@ -1,0 +1,298 @@
+{
+  "name": "Watch company careers boards daily and send new jobs to Slack with Apify",
+  "active": false,
+  "nodes": [
+    {
+      "id": "007cd46d-12d7-440f-bcd0-c8c35129af75",
+      "name": "Every morning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        420
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fd5010cb-7191-4e2d-88fe-25fe7d22588b",
+      "name": "Configure this batch",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        290,
+        420
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1f32c689-5b8d-4cab-89b7-9e9dbcce062c",
+              "name": "companies",
+              "type": "array",
+              "value": "[]"
+            },
+            {
+              "id": "49bad0ba-ac8e-497e-9d7e-74da59ae4e39",
+              "name": "stateId",
+              "type": "string",
+              "value": "YOUR_UNIQUE_WATCHLIST_STATE_ID"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "968ca61f-bb93-42a5-ae7b-97f49b572589",
+      "name": "Build one careers watchlist",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const c=$input.first().json;\nif(!Array.isArray(c.companies)||!c.companies.length)return [];\nif(c.companies.length>3)throw new Error('Use at most 3 companies.');\nif(!c.stateId || c.stateId.includes('YOUR_'))throw new Error('Choose a stable unique state ID.');\nconst companies=[...new Set(c.companies.map(v=>String(v).trim()))];\nif(companies.some(v=>!v||v.includes('YOUR_')))throw new Error('Replace company placeholders.');\nreturn [{json:{companies,stateId:c.stateId}}];"
+      }
+    },
+    {
+      "id": "e451f09b-9508-42d3-9e41-4c15d207056e",
+      "name": "Run one Apify batch",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "position": [
+        870,
+        420
+      ],
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorId": "hirepulse~ats-job-pulse",
+        "customBody": "={{ JSON.stringify({companies:$json.companies,output_mode:'jobs_only',track_diff:true,state_id:$json.stateId,only_changes:true,max_jobs_per_company:20,extract_tech_keywords:false}) }}",
+        "memory": 256,
+        "maxTotalChargeUsd": 1
+      },
+      "typeVersion": 1,
+      "retryOnFail": false
+    },
+    {
+      "id": "61fbf6f1-f4fa-4b29-ba17-8a487a58807b",
+      "name": "Compose newly opened jobs digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$input.all().map(i=>i.json).filter(d=>d.record_type==='job' && d.status==='NEW');\nif(!rows.length)return [];\nconst clean=v=>String(v??'').replace(/[<>&]/g,' ').replace(/[\\r\\n]+/g,' ');\nreturn [{json:{text:'Newly observed jobs (first run is a baseline; bounded sample):\\n'+rows.map(d=>[d.company_domain,d.title,d.location,d.apply_url].map(clean).join(' | ')).join('\\n')}}];"
+      }
+    },
+    {
+      "id": "09699e5f-4ccb-4964-a9e1-c3218b1c2c0f",
+      "name": "Send the digest to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1450,
+        420
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_SLACK_CHANNEL"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "267e4f25-5764-4c66-a43b-d119aca20fcd",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -80
+      ],
+      "parameters": {
+        "content": "## Watch company careers boards daily and send new jobs to Slack with Apify\n\nCheck a bounded careers-board watchlist once a day with change tracking enabled. Send one Slack message listing returned NEW jobs and omit closed or existing jobs.\n\n### Setup\n1. Install the official @apify/n8n-nodes-apify package in your n8n environment and select your Apify credential in the Actor node.\n2. Select your Slack credentials in their nodes; credentials are intentionally unassigned.\n3. Enter up to 3 company domains or supported ATS slugs and replace YOUR_UNIQUE_WATCHLIST_STATE_ID. Select YOUR_SLACK_CHANNEL.\n4. Edit Configure this batch, replace resource placeholders, and confirm the daily 08:00 schedule and workflow timezone before activation.\n\n### Cost\nPay per use, see the [Apify page](https://apify.com/hirepulse/ats-job-pulse). Apify run cap: $1.\n\n### Batch safety\nOne Actor run per batch, with maxTotalChargeUsd = 1, no retries and no polling. Empty input produces no paid run. A capped run may be partial; inspect its Apify results before repeating any work. Do not enable automatic retry or resume from a node that starts another Actor run.\n20 job records per company; only_changes is true and track_diff is true. On the first run every job is NEW: the digest labels this baseline possibility. Retain state_id across daily runs and use a different value for other watchlists. The bounded results are not a complete change archive.",
+        "width": 570,
+        "height": 1050
+      }
+    },
+    {
+      "id": "be738fc8-5238-4239-ae25-18471ec2c90e",
+      "name": "Step note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        100
+      ],
+      "parameters": {
+        "content": "### 1. Every morning\nStarts once daily at 08:00. Confirm the timezone before activation. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "a0a70b6a-22c0-4e18-b49f-8afa202d4e56",
+      "name": "Step note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        230,
+        100
+      ],
+      "parameters": {
+        "content": "### 2. Configure this batch\nEdit the batch settings here. Empty lists stop before Apify. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "137b5311-9c99-4156-a95a-f5d2e59e167f",
+      "name": "Step note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        520,
+        100
+      ],
+      "parameters": {
+        "content": "### 3. Build one careers watchlist\nCombines up to 3 companies and requires a stable state ID for change tracking. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "c8f6e4c8-a440-4f46-901d-82bec9cf6948",
+      "name": "Step note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        100
+      ],
+      "parameters": {
+        "content": "### 4. Run one Apify batch\nStarts one bounded batch and returns dataset items. Cost cap: $1. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "981c0b3f-24c9-4b0f-9013-93314fe87c8a",
+      "name": "Step note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        100
+      ],
+      "parameters": {
+        "content": "### 5. Compose newly opened jobs digest\nIncludes only job records with status NEW. The first run is a baseline, not a hiring spike. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    },
+    {
+      "id": "91dd8ef8-d1da-4051-910a-5964c4853e3e",
+      "name": "Step note 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1390,
+        100
+      ],
+      "parameters": {
+        "content": "### 6. Send the digest to Slack\nPosts one digest. Select your credential and replace YOUR_SLACK_CHANNEL. ",
+        "width": 270,
+        "height": 210,
+        "color": 7
+      }
+    }
+  ],
+  "connections": {
+    "Every morning": {
+      "main": [
+        [
+          {
+            "node": "Configure this batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure this batch": {
+      "main": [
+        [
+          {
+            "node": "Build one careers watchlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build one careers watchlist": {
+      "main": [
+        [
+          {
+            "node": "Run one Apify batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run one Apify batch": {
+      "main": [
+        [
+          {
+            "node": "Compose newly opened jobs digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose newly opened jobs digest": {
+      "main": [
+        [
+          {
+            "node": "Send the digest to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

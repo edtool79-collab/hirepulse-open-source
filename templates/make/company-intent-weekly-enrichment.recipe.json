@@ -1,0 +1,38 @@
+{
+  "format": "setup-recipe-not-a-native-make-blueprint",
+  "active": false,
+  "schedule_to_configure_in_make": {
+    "frequency": "weekly",
+    "day": "Monday",
+    "hour": 8,
+    "timezone": "Asia/Jerusalem"
+  },
+  "connection": "YOUR_APIFY_CONNECTION",
+  "module": "Apify / Make an API Call",
+  "method": "POST",
+  "api_url": "https://api.apify.com/v2/actors/hirepulse~company-intent-radar/run-sync-get-dataset-items",
+  "query": {
+    "maxTotalChargeUsd": 1,
+    "restartOnError": false
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "authentication": "Use a private Make Apify connection; no token is included in this recipe.",
+  "body": {
+    "domains": [
+      "YOUR_LEAD_DOMAIN"
+    ],
+    "country": "US",
+    "include_jobs": false
+  },
+  "max_input_items": 5,
+  "batching": "Aggregate the entire bounded input list into exactly one bundle before the paid API call. Stop if input is empty, too long, duplicated or contains YOUR_ placeholders.",
+  "output_handling": "Match each domain back to its source row; preserve zero/false and leave missing signals blank. Do not change source domain keys during the run.",
+  "error_handling": "Stop on errors or HTTP timeout. Do not retry the paid call or create a polling loop that starts new runs; inspect the existing run in Apify Console first.",
+  "validation": "Input types/fields match the local Actor schema. Native Make import and live operation have not been tested.",
+  "sources": [
+    "https://docs.apify.com/integrations/make",
+    "https://docs.apify.com/api/v2/actor-run-sync-get-dataset-items-post"
+  ]
+}
