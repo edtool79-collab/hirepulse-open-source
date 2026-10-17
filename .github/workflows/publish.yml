@@ -1,0 +1,92 @@
+name: Publish HirePulse to PyPI and MCP Registry
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact reviewed package version to publish
+        required: true
+        default: '0.1.0'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hirepulse-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'edtool79-collab/hirepulse-open-source' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/hirepulse-tools/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out reviewed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Verify the exact release identity and version
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          python - <<'PY'
+          import json, os, tomllib
+          from pathlib import Path
+          project = tomllib.loads(Path('pyproject.toml').read_text())['project']
+          server = json.loads(Path('server.json').read_text())
+          assert project['name'] == 'hirepulse-tools'
+          assert project['version'] == server['version'] == os.environ['EXPECTED_VERSION']
+          assert server['name'] == 'io.github.edtool79-collab/hirepulse-open-source'
+          assert server['repository']['url'] == 'https://github.com/edtool79-collab/hirepulse-open-source'
+          assert server['remotes'][0]['url'].startswith('https://mcp.apify.com?tools=hirepulse/')
+          PY
+      - name: Install development and packaging dependencies
+        run: python -m pip install '.[dev]' twine
+      - name: Verify tests and generated metadata
+        run: |
+          python -m pytest -q
+          python scripts/render_metadata.py --check
+      - name: Build and check distributions
+        run: |
+          python -m build
+          python -m twine check dist/*
+      - name: Publish to PyPI with its trusted publisher
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33
+        with:
+          attestations: true
+          skip-existing: true
+      - name: Verify the public PyPI version before registry publication
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          version = os.environ['EXPECTED_VERSION']
+          request = urllib.request.Request('https://pypi.org/pypi/hirepulse-tools/' + version + '/json', headers={'User-Agent': 'HirePulse-release-verification'})
+          data = json.load(urllib.request.urlopen(request, timeout=30))
+          assert data['info']['version'] == version
+          assert 'mcp-name: io.github.edtool79-collab/hirepulse-open-source' in data['info']['description']
+          assert any(item['packagetype'] == 'bdist_wheel' for item in data['urls'])
+          assert any(item['packagetype'] == 'sdist' for item in data['urls'])
+          PY
+      - name: Install the official MCP Registry publisher
+        run: |
+          curl --fail --location 'https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz' --output mcp-publisher.tar.gz
+          echo 'a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  mcp-publisher.tar.gz' | sha256sum --check
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+      - name: Authenticate and publish to the MCP Registry with GitHub OIDC
+        run: |
+          ./mcp-publisher validate
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
