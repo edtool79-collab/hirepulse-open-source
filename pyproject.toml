@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hirepulse-tools"
-version = "0.1.1"
-description = "Python functions and a customizable MCP server for eight HirePulse Apify tools"
+version = "0.2.0"
+description = "HirePulse gateway client for hiring signals, tech stack and company data, plus Apify tools"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"

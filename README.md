@@ -2,6 +2,32 @@
 
 <!-- mcp-name: io.github.edtool79-collab/hirepulse-open-source -->
 
+## Independent gateway (new in 0.2.0)
+
+Eight tools at https://gethirepulse.xyz, separate from the Apify tools below.
+No account or Apify token is needed. Five successful calls per UTC day per IP
+are shared across tools. Empty lookups are not charged. Prices start at $0.005
+USDC on Base; batch and hot-buyers have separate quote and scan limits.
+
+```python
+from hirepulse_tools import GatewayClient, PaymentRequired
+
+try:
+    print(GatewayClient().hiring_intent("linear.app"))
+except PaymentRequired:
+    print("Free allowance exhausted. No payment was attempted.")
+```
+
+Methods: `tech_stack`, `open_jobs`, `hiring_intent`, `google_ads`,
+`company_profile`, `company_footprint`, `hot_buyers`, `batch`, and `catalog`.
+`lookup(tool, **body)` accepts the documented gateway request body.
+The client does not sign payments or read wallet keys. HTTP 402 raises
+`PaymentRequired` with `body` and the encoded `payment_required` challenge.
+Other HTTP errors raise `GatewayError`; requests are not retried.
+
+[Runnable x402 examples](https://github.com/edtool79-collab/hirepulse-agent-examples)
+show optional payment setup. I maintain HirePulse.
+
 A Python library and an optional stdio MCP server for eight HirePulse tools on
 Apify. Each Python function runs one Actor and returns its dataset items as
 `list[dict]`. Tools run on the Apify Store, pay per use, with no subscription.
