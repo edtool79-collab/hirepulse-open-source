@@ -2,6 +2,25 @@
 
 <!-- mcp-name: io.github.edtool79-collab/hirepulse-open-source -->
 
+## LangChain and CrewAI gateway tools (0.3.0)
+
+```sh
+pip install 'hirepulse-tools[langchain]'
+# or: pip install 'hirepulse-tools[crewai]'
+```
+
+```python
+from hirepulse_tools.frameworks import get_langchain_tools, get_crewai_tools
+
+tools = get_langchain_tools()  # eight StructuredTools for a LangChain agent
+# tools = get_crewai_tools()  # eight BaseTools for a CrewAI agent
+```
+
+Both factories list tools without making network calls. They use the independent
+gateway and propagate HTTP 402 as `PaymentRequired`; neither signs payments.
+Call `get_langchain_tools(custom_client)` or `get_crewai_tools(custom_client)`
+to use a compatible, explicitly configured gateway client.
+
 ## Independent gateway (new in 0.2.0)
 
 Eight tools at https://gethirepulse.xyz, separate from the Apify tools below.
